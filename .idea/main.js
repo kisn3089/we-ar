@@ -47,6 +47,7 @@ function Circle (x, y, radius) {
         ctx.stroke();
         ctx.fill();
     }
+
     // 애니메이션 함수
     this.animate = function () {
         this.x += this.vx;
@@ -73,20 +74,24 @@ for (let i = 0; i < circlesSum; i++) {
     let vx = (Math.random() - 2) * 2;
     let vy = (Math.random() - 2) * 2;
 
-    // 각 공마다 크기를 갖기
-    for (let j = 0; j < circles.length; j++) {
-        if(circles[j].x + circles[j].radius >= circles[j].x + circles[j].radius) {
-            this.vx = -this.vx;
-            this.vy = -this.vy;
-        }
-    }
     circles.push(new Circle(x, y, radius));
+
+    if(circles[i].x + circles[i].radius && circles[i].y + circles[i].radius < 100) {
+        this.vx = this.vx;
+        this.vy = this.vy;
+        // console.log(vx, vy)
+    }
+    // 각 공마다 크기를 갖기
+    // console.log(circles[i].x);
 }
-//
+// 그렸던거 지우고 원들을 그린다. 그리고 애니메이션 실행
 function Update () {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let i = 0; i < circles.length; i++) {
         circles[i].animate();
+        let size = circles[i].x + circles[i].radius;
+        // console.log('x: ' + x, 'y: ' + y, 'radius: ' + radius);
+        // console.log(circles[i].x + circles[i].radius && circles[i].y + circles[i].radius < 100)
     }
     requestAnimationFrame(Update);
 }
