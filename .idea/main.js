@@ -51,41 +51,42 @@ function Circle (x, y, radius) {
     this.animate = function () {
         this.x += this.vx;
         this.y += this.vy;
-
+        // 가로 벽에 부딪히면 반사각으로 튕기기
         if(this.x + this.radius > canvas.width || this.x - this.radius < 0) {
             this.vx = -this.vx;
         }
-
+        // 세로 벽에 부딪히면 반사각으로 튕기
         if(this.y + this.radius > canvas.height || this.y - this.radius < 0) {
             this.vy = -this.vy;
         }
         this.draw();
     }
 }
-//
-const ballScale = Math.floor((Math.random() * 10 ) + 10);
-const balls = [];
-for (let i = 0; i < ballScale; i++) {
+// 목표 2 = 10~20 개의 공 랜덤 생성
+const circlesSum = Math.floor((Math.random() * 10 ) + 10);
+// 빈 배열 생성 후 for문으로 10~20개의 원을 빈 배열에 push
+const circles = [];
+for (let i = 0; i < circlesSum; i++) {
     let x = (Math.random() * 960) + 20;
     let y = (Math.random() * 460) + 20;
     let radius = (Math.random() * 10) + 10;
     let vx = (Math.random() - 2) * 2;
     let vy = (Math.random() - 2) * 2;
 
-    for (let j = 0; j < balls.length; j++) {
-        if(balls[j].x + balls[j].radius >= balls[j].radius + balls[j].x) {
+    // 각 공마다 크기를 갖기
+    for (let j = 0; j < circles.length; j++) {
+        if(circles[j].x + circles[j].radius >= circles[j].x + circles[j].radius) {
             this.vx = -this.vx;
             this.vy = -this.vy;
         }
     }
-
-    balls.push(new Circle(x, y, radius));
+    circles.push(new Circle(x, y, radius));
 }
-
+//
 function Update () {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < balls.length; i++) {
-        balls[i].animate();
+    for (let i = 0; i < circles.length; i++) {
+        circles[i].animate();
     }
     requestAnimationFrame(Update);
 }
