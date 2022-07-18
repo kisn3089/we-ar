@@ -1,25 +1,61 @@
 // 컨버스 2D로 사용하기 위한 준비
 const canvas = <HTMLCanvasElement>document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const c = canvas.getContext("2d");
 
-// 목표 2 = 가로 1000, 세로 500 안에 랜덤으로 x, y 생성
-let x = (Math.random() * 960) + 20;
-let y = (Math.random() * 460) + 20;
-// 목표 4 = 10~20px의 랜덤 반지름 가짐
-let radius = (Math.random() * 10) + 10;
-// 목표 5 = 2~4의 랜덤 속도를 가짐
-let vx = (Math.random() - 2) * 2;
-let vy = (Math.random() - 2) * 2;
-// 랜덤 색깔
-let c = ['#2C3e50', '#E74C3C', '#ECF0F1', '#3498DB', '#2980B9'];
+const colors = ['#2C3e50', '#E74C3C', '#3498DB', '#2980B9']
+// 색 랜덤 함수
+function randomColor(colors) {
+    return colors[Math.floor(Math.random() * colors.length)]
+}
+// 방향 함수
+function distance(x1, y1, x2, y2) {
+    const xDist = x2 - x1;
+    const yDist = y2 - y1;
 
-// 원 객체 함수 생성
-function Circle (x, y, radius) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.c = c[Math.floor(Math.random() * c.length)];
+    return Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
+}
 
+function rotate(velocity, angle) {
+    const rotatedVelocities = {
+        x: velocity.x * Math.cos(angle) - velocity.y * Math.sin(angle),
+        y: velocity.x * Math.sin(angle) + velocity.y * Math.cos(angle)
+    };
+
+    return rotatedVelocities;
+}
+
+function resolveCollision(particle, otherParticle) {
+    const xVelocityDiff = particle.velocity.x - otherParticle.velocity.x;
+    const yVelocityDiff = particle.velocity.y - otherParticle.velocity.y;
+
+    const xDist = otherParticle.x - particle.x;
+    const yDist = otherParticle.y - particle.y;
+
+    if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
+        const angle = -Math.atan2(otherParticle.y - particle.y, otherParticle.x - particle.x);
+
+        const m1 = particle.mass;
+        const m2 = otherParticle.mass;
+
+        const u1 = rotate(particle.velocity, angle);
+        const u2 = rotate(otherParticle.velocity, angle);
+
+        const v1 = { x: u1.x * (m1 - m2) / (m1 + m2) + u2.x * 2 * m2 / (m1 + m2), y: u1.y };
+        const v2 = { x: u2.x * (m1 - m2) / (m1 + m2) + u1.x * 2 * m2 / (m1 + m2), y: u2.y };
+
+        const vFinal1 = rotate(v1, -angle);
+        const vFinal2 = rotate(v2, -angle);
+
+        particle.velocity.x = vFinal1.x;
+        particle.velocity.y = vFinal1.y;
+
+        otherParticle.velocity.x = vFinal2.x;
+        otherParticle.velocity.y = vFinal2.y;
+    }
+}
+
+// 공 만드는 객체 함수
+function circle(x, y, radius, color) {
     // 목표 3 360 랜덤 각도로 날아감
     let vxPlus = Math.random();
     let vyPlus = Math.random();
@@ -35,60 +71,92 @@ function Circle (x, y, radius) {
         vyPlus = -Math.random() - 0.5;
     }
 
-    this.vx = ((Math.random() - 2) * 2) * vxPlus;
-    this.vy = ((Math.random() - 2) * 2) * vyPlus;
+    this.x = x;
+    this.y = y;
+    this.velocity = {
+        x: ((Math.random() - 2) * 2) * vxPlus,
+        y: ((Math.random() - 2) * 2) * vyPlus
+    };
+    this.radius = radius;
+    this.color = color;
+    this.mass = 1;
+    this.opacity = 0;
 
-    // 원 그리는 함수
-    this.draw = function () {
-        ctx.beginPath();
-        ctx.fillStyle = this.c;
-        ctx.arc(this.x, this.y, this.radius,0,2*Math.PI, false);
-        ctx.strokeStyle = 'blue';
-        ctx.stroke();
-        ctx.fill();
-    }
-    // 애니메이션 함수
-    this.animate = function () {
-        this.x += this.vx;
-        this.y += this.vy;
+    // 공끼리 부딪히는지 확인
+    this.update = circles => {
+        this.draw();
+
+        for(let i = 0; i < circles.length; i++) {
+            if(this === circles[i]) continue;
+            if(distance(this.x, this.y, circles[i].x, circles[i].y) - this.radius * 2 < 0) {
+                // circles[i].velocity.x = -circles[i].velocity.x;
+                // circles[i].velocity.y = -circles[i].velocity.y;
+                resolveCollision(this, circles[i]);
+                this.opacity += 0.1;
+            }
+        }
         // 가로 벽에 부딪히면 반사각으로 튕기기
         if(this.x + this.radius > canvas.width || this.x - this.radius < 0) {
-            this.vx = -this.vx;
+            this.velocity.x = -this.velocity.x;
         }
         // 세로 벽에 부딪히면 반사각으로 튕기
         if(this.y + this.radius > canvas.height || this.y - this.radius < 0) {
-            this.vy = -this.vy;
+            this.velocity.y = -this.velocity.y;
         }
-        this.draw();
-    }
+
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+    };
+    // 공 그리는 함수
+    this.draw = () => {
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        c. save();
+        c.globalAlpha = this.opacity;
+        c.fillStyle = this.color;
+        c.fill();
+        c.restore();
+        c.strokeStyle = this.color;
+        c.stroke();
+        c.closePath();
+    };
 }
+
 // 목표 2 = 10~20 개의 공 랜덤 생성
 const circlesSum = Math.floor((Math.random() * 10 ) + 10);
-// 빈 배열 생성 후 for문으로 10~20개의 원을 빈 배열에 push
-const circles = [];
-for (let i = 0; i < circlesSum; i++) {
-    let x = (Math.random() * 960) + 20;
-    let y = (Math.random() * 460) + 20;
-    let radius = (Math.random() * 10) + 10;
-    let vx = (Math.random() - 2) * 2;
-    let vy = (Math.random() - 2) * 2;
+let circles;
+function init() {
+    circles = []
 
-    // 각 공마다 크기를 갖기
-    for (let j = 0; j < circles.length; j++) {
-        if(circles[j].x + circles[j].radius >= circles[j].x + circles[j].radius) {
-            vx = -vx;
-            vy = -vy;
+    for (let i = 0; i < circlesSum; i++) {
+        const radius = (Math.random() * 10) + 10;
+        let x = (Math.random() * 960) + 20;
+        let y = (Math.random() * 460) + 20;
+        const color = randomColor(colors);
+
+        for(let j = 0; j < circles.length; j++) {
+            if(distance(x, y, circles[j].x, circles[j].y) - radius * 2 < 0) {
+                x = (Math.random() * 960) + 20;
+                y = (Math.random() * 460) + 20;
+
+                j = -1;
+            }
         }
-        console.log(typeof(vx))
+
+        circles.push(new circle(x, y, radius, color));
     }
-    circles.push(new Circle(x, y, radius));
+    console.log(circles);
 }
-// 그렸던거 지우고 원들을 그린다. 그리고 애니메이션 실행
-function Update () {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < circles.length; i++) {
-        circles[i].animate();
-    }
-    requestAnimationFrame(Update);
+
+// 그렸던거 지우고 공들을 그린다. 그리고 애니메이션 실행
+function animate() {
+    requestAnimationFrame(animate)
+    c.clearRect(0, 0, canvas.width, canvas.height)
+
+    circles.forEach(circle => {
+        circle.update(circles);
+    });
 }
-Update();
+
+init();
+animate();
