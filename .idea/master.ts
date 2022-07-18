@@ -89,8 +89,6 @@ function circle(x, y, radius, color) {
         for(let i = 0; i < circles.length; i++) {
             if(this === circles[i]) continue;
             if(distance(this.x, this.y, circles[i].x, circles[i].y) - this.radius * 2 < 0) {
-                // circles[i].velocity.x = -circles[i].velocity.x;
-                // circles[i].velocity.y = -circles[i].velocity.y;
                 resolveCollision(this, circles[i]);
                 this.opacity += 0.1;
             }

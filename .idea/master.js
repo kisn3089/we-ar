@@ -75,8 +75,6 @@ function circle(x, y, radius, color) {
             if (_this === circles[i])
                 continue;
             if (distance(_this.x, _this.y, circles[i].x, circles[i].y) - _this.radius * 2 < 0) {
-                // circles[i].velocity.x = -circles[i].velocity.x;
-                // circles[i].velocity.y = -circles[i].velocity.y;
                 resolveCollision(_this, circles[i]);
                 _this.opacity += 0.1;
             }
